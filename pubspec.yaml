@@ -1,0 +1,68 @@
+name: hatirlaticiapp
+description: "A new Flutter project."
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.11.4
+
+dependencies:
+  background_sms: ^0.0.4
+  call_log: ^6.0.1
+  flutter:
+    sdk: flutter
+  flutter_background_service: ^5.1.0
+  flutter_local_notifications: ^22.0.1
+  notification_listener_service: ^1.0.0
+  permission_handler: ^12.0.3
+  shared_preferences: ^2.5.5
+  supabase_flutter: ^2.4.0
+  timezone: ^0.11.1
+  url_launcher: ^6.3.2
+  uuid: ^4.5.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.3
+  flutter_native_splash: ^2.4.6
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/icon.png
+    - assets/logo.png
+
+# ============================================================================
+# Uygulama Simgesi Konfigürasyonu (flutter_launcher_icons)
+# ============================================================================
+# Aşağıdaki yapılandırma, assets/icon.png dosyasını kaynak olarak kullanarak
+# Android ve iOS platformları için uygun boyutlarda uygulama simgeleri üretir.
+# Simgeleri oluşturmak için terminalde şu komutu çalıştırın:
+#   dart run flutter_launcher_icons
+# ============================================================================
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/icon.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/icon.png"
+
+# ============================================================================
+# Yerel Açılış Ekranı Konfigürasyonu (flutter_native_splash)
+# ============================================================================
+# Aşağıdaki yapılandırma, assets/logo.png dosyasını merkeze yerleştirerek
+# profesyonel koyu temalı bir açılış ekranı oluşturur.
+# Açılış ekranını oluşturmak için terminalde şu komutu çalıştırın:
+#   dart run flutter_native_splash:create
+# ============================================================================
+flutter_native_splash:
+  color: "#FFFFFF"
+  image: "assets/logo.png"
+  android: true
+  ios: false
+  android_12:
+    color: "#FFFFFF"
+    image: "assets/logo.png"
