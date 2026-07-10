@@ -1,20 +1,28 @@
-# Akıllı Hatırlatıcı (Smart Reminder App)
+# Akıllı Hatırlatıcı (Smart Reminder)
 
-Flutter ile geliştirilmiş kişisel, şık ve kullanışlı bir hatırlatıcı uygulamasıdır. Günlük görevlerinizi, randevularınızı ve önemli anlarınızı unutmamak için kolayca hatırlatıcılar kurabilirsiniz.
+Gündelik koşturmaca içinde önemli çağrıları ve mesajları gözden kaçırmaya son! **Akıllı Hatırlatıcı**, telefonunuzdaki arama kayıtlarını ve WhatsApp bildirimlerini tek bir çatı altında toplayarak size kusursuz bir görev yönetimi deneyimi sunar.
 
-## 🚀 Özellikler
+Cevapsız kalan bir aramaya geri dönmek veya önemli bir WhatsApp mesajını daha sonra yanıtlamak için saniyeler içinde alarm kurabilirsiniz. Oluşturduğunuz tüm görevler şık ve modern **Görevler** panelinde toplanır. Sürükle-bırak özelliği ile önceliklerinizi belirleyebilir, işiniz bittiğinde kartı basitçe kaydırarak (swipe) görevi tamamlandı olarak işaretleyebilirsiniz. 
 
-- **Modern ve Şık Arayüz:** Kullanıcı dostu, akıcı ve göz yormayan tasarım.
-- **Hızlı Not Ekleme:** Hızlıca hatırlatıcı ekleyebilme.
-- **Görev Yönetimi:** Tamamlanan görevleri işaretleme veya silme.
-- **Yerel Bildirimler (Local Notifications):** Planlanan zamanda uyarı alarak işlerinizi aksatmayın. (Geliştirme aşamasında/aktif)
+## Öne Çıkan Özellikler
 
-## 🛠 Kullanılan Teknolojiler
+- **Arama Kaydı Entegrasyonu:** Gelen, giden ve cevapsız aramalarınızı anında senkronize edip tek tıkla hatırlatıcı kurun.
+- **WhatsApp Desteği:** Gelen mesaj bildirimlerini yakalayarak unutmak istemediğiniz sohbetler için ileri tarihli alarmlar oluşturun.
+- **Dinamik Görev Paneli:** Süresi geçmiş alarmları kırmızı çerçeveyle öne çıkaran, sürükle-bırak (drag & drop) destekli akıllı liste.
+- **Gerçek Zamanlı Senkronizasyon:** Supabase altyapısı sayesinde verileriniz hızlı, güvenli ve anlık olarak işlenir.
+- **Modern ve Akıcı Arayüz:** Göz yormayan tasarımı ve pratik kullanımıyla iş akışınızı hızlandırın.
 
-- **[Flutter](https://flutter.dev/):** UI framework.
-- **[Dart](https://dart.dev/):** Programlama dili.
+*Hiçbir çağrıyı cevapsız, hiçbir mesajı yanıtsız bırakmayın!*
 
-## 📦 Kurulum
+---
+
+## Teknolojiler ve Altyapı
+
+- **UI / Çerçeve:** [Flutter](https://flutter.dev/) (Dart)
+- **Veritabanı / Backend:** Supabase
+- **Eklentiler:** Call Logs, Notifications, SharedPreferences, UI Animations
+
+## 📦 Kurulum ve Çalıştırma
 
 Bu projeyi yerel ortamınızda çalıştırmak için aşağıdaki adımları izleyebilirsiniz:
 
@@ -33,12 +41,7 @@ Bu projeyi yerel ortamınızda çalıştırmak için aşağıdaki adımları izl
    flutter pub get
    ```
 
-4. Uygulamayı çalıştırın:
+4. Uygulamayı cihazınızda veya emülatörde çalıştırın:
    ```bash
    flutter run
    ```
-
-
----
-
-Geliştirici: [Emrullah Çelik](https://github.com/emrllhclk0)
