@@ -14,6 +14,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:background_sms/background_sms.dart';
+import 'package:app_settings/app_settings.dart';
+import 'screens/onboarding_screen.dart';
 
 // ============================================================================
 // Supabase Veritabanı Bağlantı Konfigürasyonu
@@ -217,9 +219,9 @@ void onStart(ServiceInstance service) async {
   Map<String, DateTime> lastSmsSent = {};
 
   NotificationListenerService.notificationsStream.listen((event) async {
-    final packageName = event.packageName?.toLowerCase() ?? '';
-    final contentLower = (event.content ?? '').toLowerCase();
-    final titleLower = (event.title ?? '').toLowerCase();
+    final packageName = event.packageName.toLowerCase();
+    final contentLower = event.content.toLowerCase();
+    final titleLower = event.title.toLowerCase();
 
     // ------------------------------------------------------------------------
     // TOPLANTI MODU (CEVAPSIZ ARAMA SMS YANITI)
@@ -279,9 +281,9 @@ void onStart(ServiceInstance service) async {
     // ------------------------------------------------------------------------
     // WHATSAPP KONTROLÜ
     // ------------------------------------------------------------------------
-    if (packageName == 'com.whatsapp' && (event.content ?? '').isNotEmpty) {
-      String content = event.content!.trim();
-      String sender = (event.title ?? '').isEmpty ? 'Bilinmeyen Kişi' : event.title!.trim();
+    if (packageName == 'com.whatsapp' && event.content.isNotEmpty) {
+      String content = event.content.trim();
+      String sender = event.title.isEmpty ? 'Bilinmeyen Kişi' : event.title.trim();
 
       if (contentLower.contains('yeni mesaj') || contentLower.contains('new message') || sender.toLowerCase() == 'whatsapp') {
         return;
@@ -393,21 +395,21 @@ class BosDurumBileseni extends StatelessWidget {
           children: [
             Container(
               padding: const EdgeInsets.all(24),
-              decoration: const BoxDecoration(color: AppTheme.primaryLight, shape: BoxShape.circle),
+              decoration: BoxDecoration(color: AppTheme.primaryLight, shape: BoxShape.circle),
               child: Icon(icon, size: 56, color: AppTheme.primary.withValues(alpha: 0.5)),
             ),
             const SizedBox(height: 24),
             Text(
               mesaj,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 17, color: AppTheme.textPrimary, fontWeight: FontWeight.w600),
+              style: TextStyle(fontSize: 17, color: AppTheme.textPrimary, fontWeight: FontWeight.w600),
             ),
             if (altMesaj != null) ...[
               const SizedBox(height: 8),
               Text(
                 altMesaj!,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 14, color: AppTheme.textSecondary),
+                style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
               ),
             ],
           ],
@@ -429,23 +431,24 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'DönüşYap',
+      themeMode: ThemeMode.light,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: AppTheme.primary, brightness: Brightness.light),
-        scaffoldBackgroundColor: AppTheme.background,
+        scaffoldBackgroundColor: const Color(0xFFF8F9FD),
         useMaterial3: true,
         appBarTheme: const AppBarTheme(
           centerTitle: false,
           elevation: 0,
           scrolledUnderElevation: 0.5,
-          backgroundColor: AppTheme.background,
-          foregroundColor: AppTheme.textPrimary,
-          titleTextStyle: TextStyle(color: AppTheme.textPrimary, fontSize: 24, fontWeight: FontWeight.w700, letterSpacing: -0.5),
+          backgroundColor: Color(0xFFF8F9FD),
+          foregroundColor: Color(0xFF1E1E2D),
+          titleTextStyle: TextStyle(color: Color(0xFF1E1E2D), fontSize: 24, fontWeight: FontWeight.w700, letterSpacing: -0.5),
           systemOverlayStyle: SystemUiOverlayStyle(statusBarColor: Colors.transparent, statusBarIconBrightness: Brightness.dark),
         ),
         cardTheme: CardThemeData(
           elevation: 0,
-          color: AppTheme.cardColor,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.cardRadius), side: BorderSide(color: Colors.grey.shade100)),
+          color: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.cardRadius), side: BorderSide(color: Colors.grey.shade200)),
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
         ),
         snackBarTheme: SnackBarThemeData(
@@ -453,8 +456,40 @@ class MyApp extends StatelessWidget {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.smallRadius)),
         ),
       ),
-      home: const MainScreen(),
+      home: const _AppEntry(),
     );
+  }
+}
+
+class _AppEntry extends StatefulWidget {
+  const _AppEntry();
+  @override
+  State<_AppEntry> createState() => _AppEntryState();
+}
+
+class _AppEntryState extends State<_AppEntry> {
+  bool _showOnboarding = false;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkOnboarding();
+  }
+
+  Future<void> _checkOnboarding() async {
+    final prefs = await SharedPreferences.getInstance();
+    final show = prefs.getBool('show_onboarding') ?? true;
+    setState(() {
+      _showOnboarding = show;
+      _isLoading = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    return _showOnboarding ? const OnboardingScreen() : const MainScreen();
   }
 }
 
@@ -472,6 +507,7 @@ class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
   final List<Widget> _screens = [
+    const DashboardScreen(),
     const CallLogsScreen(),
     const RemindersScreen(),
     const SettingsScreen(),
@@ -498,6 +534,7 @@ class _MainScreenState extends State<MainScreen> {
           onDestinationSelected: (index) => setState(() => _currentIndex = index),
           labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
           destinations: const [
+            NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard, color: AppTheme.primary), label: 'Görevler'),
             NavigationDestination(icon: Icon(Icons.phone_outlined), selectedIcon: Icon(Icons.phone, color: AppTheme.primary), label: 'Aramalar'),
             NavigationDestination(icon: Icon(Icons.chat_outlined), selectedIcon: Icon(Icons.chat, color: AppTheme.primary), label: 'WhatsApp'),
             NavigationDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings, color: AppTheme.primary), label: 'Ayarlar'),
@@ -589,18 +626,35 @@ class _CallLogsScreenState extends State<CallLogsScreen> {
     if (picked != null) {
       final timestampStr = DateTime.fromMillisecondsSinceEpoch(entry.timestamp ?? 0).toIso8601String();
       try {
-        await Supabase.instance.client
+        final resp = await Supabase.instance.client
             .from('call_logs')
             .update({'is_reminder_set': true, 'reminder_time': picked.toIso8601String()})
             .eq('device_id', _deviceId)
-            .eq('call_timestamp', timestampStr);
+            .eq('call_timestamp', timestampStr)
+            .select();
+
+        if (resp.isEmpty) {
+          String callTypeStr = entry.callType == CallType.incoming ? 'Gelen' : entry.callType == CallType.outgoing ? 'Giden' : entry.callType == CallType.missed ? 'Cevapsız' : 'Bilinmeyen';
+          await Supabase.instance.client.from('call_logs').insert({
+            'device_id': _deviceId,
+            'phone_number': entry.number ?? '0000',
+            'caller_name': entry.name?.isNotEmpty == true ? entry.name : 'Bilinmeyen',
+            'duration_seconds': entry.duration ?? 0,
+            'call_type': callTypeStr,
+            'call_timestamp': timestampStr,
+            'is_reminder_set': true,
+            'reminder_time': picked.toIso8601String()
+          });
+        }
 
         int notificationId = int.tryParse((entry.number ?? "1234").replaceAll(RegExp(r'[^0-9]'), '').characters.takeLast(4).toString()) ?? 1000;
         String name = entry.name?.isNotEmpty == true ? entry.name! : (entry.number ?? 'Bilinmeyen');
 
         await zamanliBildirimKur(notificationId, "📞 Arama Hatırlatıcı", "$name kişisini aramanız gerekiyor.", picked);
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Text('Hatırlatıcı kuruldu'), backgroundColor: AppTheme.success));
-        _fetchAndSyncCallLogs();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Text('Hatırlatıcı kuruldu'), backgroundColor: AppTheme.success));
+          _fetchAndSyncCallLogs();
+        }
       } catch (e) {
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Hata: $e'), backgroundColor: AppTheme.deleteRed));
       }
@@ -767,16 +821,16 @@ class _CallLogsScreenState extends State<CallLogsScreen> {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(displayName, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: AppTheme.textPrimary), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                      Text(displayName, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: AppTheme.textPrimary), maxLines: 1, overflow: TextOverflow.ellipsis),
                                       const SizedBox(height: 4),
                                       Wrap(
                                         crossAxisAlignment: WrapCrossAlignment.center,
                                         spacing: 4,
                                         children: [
                                           Icon(callIcon, size: 14, color: callColor),
-                                          Text(formatDateTime(callTime), style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
-                                          const Text('·', style: TextStyle(color: AppTheme.textSecondary)),
-                                          Text(_formatDuration(entry.duration), style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+                                          Text(formatDateTime(callTime), style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+                                          Text('·', style: TextStyle(color: AppTheme.textSecondary)),
+                                          Text(_formatDuration(entry.duration), style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
                                         ],
                                       ),
                                     ],
@@ -893,11 +947,15 @@ class _RemindersScreenState extends State<RemindersScreen> {
   }
 
   Future<void> _openWhatsApp() async {
-    final Uri launchUri = Uri.parse('whatsapp://send');
+    final Uri whatsappUrl = Uri.parse("whatsapp://send");
     try {
-      await launchUrl(launchUri, mode: LaunchMode.externalApplication);
+      bool launched = await launchUrl(whatsappUrl, mode: LaunchMode.externalApplication);
+      if (!launched) {
+        final Uri webUrl = Uri.parse("https://wa.me/");
+        await launchUrl(webUrl, mode: LaunchMode.externalApplication);
+      }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('WhatsApp açılamadı. Yüklü olduğundan emin olun.')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('WhatsApp başlatılamadı. Cihazınızda yüklü olduğundan emin olun.')));
     }
   }
 
@@ -1021,12 +1079,12 @@ class _RemindersScreenState extends State<RemindersScreen> {
                                     children: [
                                       Row(
                                         children: [
-                                          Expanded(child: Text(senderName, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: AppTheme.textPrimary), maxLines: 1, overflow: TextOverflow.ellipsis)),
-                                          Text(formatDateTime(time), style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
+                                          Expanded(child: Text(senderName, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: AppTheme.textPrimary), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                                          Text(formatDateTime(time), style: TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
                                         ],
                                       ),
                                       const SizedBox(height: 4),
-                                      Text(messageContent, style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary, height: 1.3), maxLines: 2, overflow: TextOverflow.ellipsis),
+                                      Text(messageContent, style: TextStyle(fontSize: 13, color: AppTheme.textSecondary, height: 1.3), maxLines: 2, overflow: TextOverflow.ellipsis),
                                     ],
                                   ),
                                 ),
@@ -1080,6 +1138,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   List<String> _numberList = [];
   bool _insistentAlarm = false;
   
+  List<String> _vipList = [];
+  List<String> _blacklist = [];
+
+  final TextEditingController _vipController = TextEditingController();
+  final TextEditingController _blacklistController = TextEditingController();
+  
   final TextEditingController _messageController = TextEditingController();
   final TextEditingController _numberController = TextEditingController();
   bool _isLoading = true;
@@ -1098,6 +1162,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _filterMode = prefs.getString('filter_mode') ?? 'Tümü';
       _numberList = prefs.getStringList('number_list') ?? [];
       _insistentAlarm = prefs.getBool('insistent_alarm') ?? false;
+      _vipList = prefs.getStringList('vip_list') ?? [];
+      _blacklist = prefs.getStringList('blacklist') ?? [];
+
       _isLoading = false;
     });
   }
@@ -1109,26 +1176,45 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await prefs.setString('filter_mode', _filterMode);
     await prefs.setStringList('number_list', _numberList);
     await prefs.setBool('insistent_alarm', _insistentAlarm);
+    await prefs.setStringList('vip_list', _vipList);
+    await prefs.setStringList('blacklist', _blacklist);
     if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ayarlar kaydedildi.'), backgroundColor: AppTheme.success));
   }
   
   void _addNumber() {
-    String num = _numberController.text.trim();
-    if (num.isNotEmpty && !_numberList.contains(num)) {
+    String number = _numberController.text.trim();
+    if (number.isNotEmpty && !_numberList.contains(number)) {
       setState(() {
-        _numberList.add(num);
+        _numberList.add(number);
         _numberController.clear();
       });
       _saveSettings();
     }
   }
 
-  void _removeNumber(String num) {
+  void _removeNumber(String number) {
     setState(() {
-      _numberList.remove(num);
+      _numberList.remove(number);
     });
     _saveSettings();
   }
+
+  void _addVip() {
+    String val = _vipController.text.trim();
+    if (val.isNotEmpty && !_vipList.contains(val)) {
+      setState(() { _vipList.add(val); _vipController.clear(); });
+      _saveSettings();
+    }
+  }
+  void _removeVip(String val) { setState(() => _vipList.remove(val)); _saveSettings(); }
+  void _addBlacklist() {
+    String val = _blacklistController.text.trim();
+    if (val.isNotEmpty && !_blacklist.contains(val)) {
+      setState(() { _blacklist.add(val); _blacklistController.clear(); });
+      _saveSettings();
+    }
+  }
+  void _removeBlacklist(String val) { setState(() => _blacklist.remove(val)); _saveSettings(); }
 
   @override
   Widget build(BuildContext context) {
@@ -1157,7 +1243,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         child: Icon(Icons.alarm_on_rounded, color: Colors.blue.shade700),
                       ),
                       const SizedBox(width: 16),
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -1168,7 +1254,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       Switch(
                         value: _insistentAlarm,
-                        activeColor: AppTheme.primary,
+                        activeTrackColor: AppTheme.primary,
                         onChanged: (val) {
                           setState(() => _insistentAlarm = val);
                           _saveSettings();
@@ -1180,8 +1266,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 16),
-          
+
           // Toplantı Modu Kartı
           Card(
             margin: EdgeInsets.zero,
@@ -1198,7 +1283,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         child: Icon(Icons.do_not_disturb_on_rounded, color: Colors.orange.shade700),
                       ),
                       const SizedBox(width: 16),
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -1209,7 +1294,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       Switch(
                         value: _meetingMode,
-                        activeColor: AppTheme.primary,
+                        activeTrackColor: AppTheme.primary,
                         onChanged: (val) {
                           setState(() => _meetingMode = val);
                           _saveSettings();
@@ -1219,7 +1304,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   if (_meetingMode) ...[
                     const Divider(height: 24),
-                    const Text('Otomatik Yanıt Mesajı', style: TextStyle(fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+                    Text('Otomatik Yanıt Mesajı', style: TextStyle(fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
                     const SizedBox(height: 8),
                     TextField(
                       controller: _messageController,
@@ -1233,7 +1318,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     const SizedBox(height: 16),
                     
-                    const Text('Filtre Modu', style: TextStyle(fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+                    Text('Filtre Modu', style: TextStyle(fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
                     const SizedBox(height: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -1264,7 +1349,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     
                     if (_filterMode != 'Tümü') ...[
                       const SizedBox(height: 16),
-                      Text(_filterMode == 'VIP' ? 'Sadece bu numaralara SMS atılacak:' : 'Bu numaralara SMS ATILMAYACAK:', style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary)),
+                      Text(_filterMode == 'VIP' ? 'Sadece bu numaralara SMS atılacak:' : 'Bu numaralara SMS ATILMAYACAK:', style: TextStyle(fontSize: 13, color: AppTheme.textSecondary)),
                       const SizedBox(height: 8),
                       Row(
                         children: [
@@ -1297,10 +1382,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         Wrap(
                           spacing: 8,
                           runSpacing: 8,
-                          children: _numberList.map((num) => Chip(
-                            label: Text(num, style: const TextStyle(fontSize: 13)),
+                          children: _numberList.map((numText) => Chip(
+                            label: Text(numText, style: const TextStyle(fontSize: 13)),
                             deleteIcon: const Icon(Icons.close, size: 16),
-                            onDeleted: () => _removeNumber(num),
+                            onDeleted: () => _removeNumber(numText),
                             backgroundColor: _filterMode == 'VIP' ? Colors.green.shade50 : Colors.red.shade50,
                             side: BorderSide(color: _filterMode == 'VIP' ? Colors.green.shade200 : Colors.red.shade200),
                           )).toList(),
@@ -1326,9 +1411,226 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           
+          // Hızlı SMS Şablonları
+          if (_meetingMode) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  ActionChip(
+                    avatar: const Icon(Icons.flash_on, size: 16),
+                    label: const Text('Toplantıdayım'),
+                    onPressed: () {
+                      _messageController.text = 'Şu an toplantıdayım, sonra döneceğim.';
+                      _saveSettings();
+                    },
+                  ),
+                  ActionChip(
+                    avatar: const Icon(Icons.directions_car, size: 16),
+                    label: const Text('Araçtayım'),
+                    onPressed: () {
+                      _messageController.text = 'Araç kullanıyorum, acilse mesaj atın.';
+                      _saveSettings();
+                    },
+                  ),
+                  ActionChip(
+                    avatar: const Icon(Icons.movie, size: 16),
+                    label: const Text('Sinemadayım'),
+                    onPressed: () {
+                      _messageController.text = 'Sinemadayım, müsait olunca arayacağım.';
+                      _saveSettings();
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+          
+          const SizedBox(height: 16),
+
+          // Arka Plan Çalışma İzni Kartı
+          Card(
+            margin: EdgeInsets.zero,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+              onTap: () => AppSettings.openAppSettings(),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(color: Colors.green.shade100, borderRadius: BorderRadius.circular(8)),
+                      child: Icon(Icons.battery_saver, color: Colors.green.shade700),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Arka Plan Çalışma İzni', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
+                          Text('Pil optimizasyonunu kapatarak kesintisiz çalışın', style: TextStyle(fontSize: 13, color: AppTheme.textSecondary)),
+                        ],
+                      ),
+                    ),
+                    Icon(Icons.chevron_right_rounded, color: AppTheme.textSecondary),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // VIP Kişiler Kartı
+          Card(
+            margin: EdgeInsets.zero,
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(color: Colors.green.shade100, borderRadius: BorderRadius.circular(8)),
+                        child: Icon(Icons.star_rounded, color: Colors.green.shade700),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('VIP Kişiler', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
+                            Text('Ayrıcalıklı kişiler listesi', style: TextStyle(fontSize: 13, color: AppTheme.textSecondary)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _vipController,
+                          decoration: InputDecoration(
+                            hintText: 'Kişi Adı veya Numara',
+                            isDense: true,
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      FilledButton(
+                        onPressed: _addVip,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: Colors.green.shade600,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        child: const Text('Ekle'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  if (_vipList.isEmpty)
+                    const Text('Liste henüz boş', style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic, fontSize: 13))
+                  else
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _vipList.map((val) => Chip(
+                        label: Text(val, style: const TextStyle(fontSize: 13)),
+                        deleteIcon: const Icon(Icons.close, size: 16),
+                        onDeleted: () => _removeVip(val),
+                        backgroundColor: Colors.green.shade50,
+                        side: BorderSide(color: Colors.green.shade200),
+                      )).toList(),
+                    ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Kara Liste Kartı
+          Card(
+            margin: EdgeInsets.zero,
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(color: Colors.red.shade100, borderRadius: BorderRadius.circular(8)),
+                        child: Icon(Icons.block_rounded, color: Colors.red.shade700),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Kara Liste', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
+                            Text('Bu kişilerden gelen SMS/WhatsApp izlenmez', style: TextStyle(fontSize: 13, color: AppTheme.textSecondary)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _blacklistController,
+                          decoration: InputDecoration(
+                            hintText: 'Kişi Adı veya Numara',
+                            isDense: true,
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      FilledButton(
+                        onPressed: _addBlacklist,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: Colors.red.shade600,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        child: const Text('Ekle'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  if (_blacklist.isEmpty)
+                    const Text('Liste henüz boş', style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic, fontSize: 13))
+                  else
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _blacklist.map((val) => Chip(
+                        label: Text(val, style: const TextStyle(fontSize: 13)),
+                        deleteIcon: const Icon(Icons.close, size: 16),
+                        onDeleted: () => _removeBlacklist(val),
+                        backgroundColor: Colors.red.shade50,
+                        side: BorderSide(color: Colors.red.shade200),
+                      )).toList(),
+                    ),
+                ],
+              ),
+            ),
+          ),
+
           const SizedBox(height: 24),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 8.0),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
             child: Text('GİZLİLİK', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.textSecondary, letterSpacing: 1)),
           ),
           const SizedBox(height: 8),
@@ -1345,3 +1647,344 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 }
+
+// ============================================================================
+// PANEL (DASHBOARD) EKRANI
+// ============================================================================
+
+class DashboardScreen extends StatefulWidget {
+  const DashboardScreen({super.key});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  bool _isLoading = true;
+  List<dynamic> _tasks = [];
+  late String _deviceId;
+
+  @override
+  void initState() {
+    super.initState();
+    _initAndFetch();
+  }
+
+  Future<void> _initAndFetch() async {
+    _deviceId = await getDeviceId();
+    await _fetchTasks();
+  }
+
+  Future<void> _fetchTasks() async {
+    setState(() => _isLoading = true);
+    try {
+      final msgData = await Supabase.instance.client
+          .from('reminders')
+          .select()
+          .eq('device_id', _deviceId)
+          .eq('is_reminder_set', true);
+          
+      final callData = await Supabase.instance.client
+          .from('call_logs')
+          .select()
+          .eq('device_id', _deviceId)
+          .eq('is_reminder_set', true);
+
+      List<dynamic> combined = [];
+      Set<String> seen = {};
+
+      for (var call in callData) {
+        String uniqueKey = 'call_${call['phone_number']}_${call['reminder_time']}';
+        if (seen.contains(uniqueKey)) continue;
+        seen.add(uniqueKey);
+
+        String idField = call['id'] != null ? 'id' : 'call_timestamp';
+        var idVal = call['id'] ?? call['call_timestamp'];
+        combined.add({
+          'id': 'call_$idVal',
+          'real_id': idVal,
+          'id_field': idField,
+          'contact_name': call['caller_name'],
+          'phone_number': call['phone_number'],
+          'reminder_time': call['reminder_time'],
+          'type': 'call',
+        });
+      }
+      
+      for (var msg in msgData) {
+        String uniqueKey = 'msg_${msg['sender_name']}_${msg['reminder_time']}';
+        if (seen.contains(uniqueKey)) continue;
+        seen.add(uniqueKey);
+
+        combined.add({
+          'id': 'msg_${msg['id']}',
+          'real_id': msg['id'],
+          'id_field': 'id',
+          'contact_name': msg['sender_name'],
+          'phone_number': 'WhatsApp Mesajı',
+          'reminder_time': msg['reminder_time'],
+          'type': 'msg',
+        });
+      }
+      
+      final prefs = await SharedPreferences.getInstance();
+      List<String> savedOrder = prefs.getStringList('dashboard_order') ?? [];
+      
+      if (savedOrder.isNotEmpty) {
+        combined.sort((a, b) {
+          int indexA = savedOrder.indexOf(a['id'].toString());
+          int indexB = savedOrder.indexOf(b['id'].toString());
+          
+          if (indexA == -1 && indexB == -1) {
+            String timeA = a['reminder_time'] ?? '';
+            String timeB = b['reminder_time'] ?? '';
+            return timeA.compareTo(timeB);
+          }
+          if (indexA == -1) return -1;
+          if (indexB == -1) return 1;
+
+          return indexA.compareTo(indexB);
+        });
+      } else {
+        combined.sort((a, b) {
+          String timeA = a['reminder_time'] ?? '';
+          String timeB = b['reminder_time'] ?? '';
+          return timeA.compareTo(timeB);
+        });
+      }
+      
+      if (mounted) {
+        setState(() {
+          _tasks = combined;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _onReorder(int oldIndex, int newIndex) async {
+    if (newIndex > oldIndex) newIndex -= 1;
+    setState(() {
+      final item = _tasks.removeAt(oldIndex);
+      _tasks.insert(newIndex, item);
+    });
+    
+    final prefs = await SharedPreferences.getInstance();
+    List<String> newOrder = _tasks.map((e) => e['id'].toString()).toList();
+    await prefs.setStringList('dashboard_order', newOrder);
+  }
+
+  Future<void> _completeTask(dynamic task) async {
+    final String type = task['type'] ?? 'call';
+    
+    try {
+      if (type == 'call') {
+        await Supabase.instance.client
+            .from('call_logs')
+            .update({'is_reminder_set': false})
+            .eq('device_id', _deviceId)
+            .eq('phone_number', task['phone_number'])
+            .eq('is_reminder_set', true);
+      } else {
+        await Supabase.instance.client
+            .from('reminders')
+            .update({'is_reminder_set': false})
+            .eq('id', task['real_id']);
+      }
+      
+      if (mounted) {
+        setState(() {
+          _tasks.removeWhere((t) => t['id'] == task['id']);
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Görev tamamlandı 🎉'),
+            backgroundColor: AppTheme.success,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (_) {}
+  }
+
+  String _getTimeLeft(String? reminderTime) {
+    if (reminderTime == null) return '';
+    final dt = DateTime.tryParse(reminderTime);
+    if (dt == null) return '';
+    final diff = dt.difference(DateTime.now());
+    if (diff.isNegative) return 'Süresi geçti';
+    if (diff.inDays > 0) return '${diff.inDays} gün sonra';
+    if (diff.inHours > 0) return '${diff.inHours} saat sonra';
+    if (diff.inMinutes > 0) return '${diff.inMinutes} dk sonra';
+    return 'Birazdan';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Görevler', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 26)),
+        actions: [
+          Container(
+            margin: const EdgeInsets.only(right: 16),
+            child: IconButton(
+              icon: const Icon(Icons.refresh_rounded, size: 24),
+              style: IconButton.styleFrom(backgroundColor: AppTheme.primaryLight, foregroundColor: AppTheme.primary),
+              onPressed: _fetchTasks,
+            ),
+          ),
+        ],
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF8B80F9), Color(0xFF6C63FF)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    padding: const EdgeInsets.all(20),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(Icons.check_circle_outline, color: Colors.white, size: 32),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('${_tasks.length} Bekleyen Görev', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 4),
+                              Text('Sürükle & bırak ile öncelik sıralayın', style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: _tasks.isEmpty
+                      ? const Center(child: Text('Bekleyen görev yok 🎉', style: TextStyle(color: AppTheme.textSecondary)))
+                      : ReorderableListView.builder(
+                          buildDefaultDragHandles: false,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          itemCount: _tasks.length,
+                          onReorder: _onReorder,
+                          proxyDecorator: (Widget child, int index, Animation<double> animation) {
+                            return Material(
+                              elevation: 0,
+                              color: Colors.transparent,
+                              child: child,
+                            );
+                          },
+                          itemBuilder: (context, index) {
+                            final task = _tasks[index];
+                            final isCall = (task['type'] ?? 'call') == 'call';
+                            
+                            bool isOverdue = false;
+                            final reminderTimeStr = task['reminder_time'];
+                            if (reminderTimeStr != null) {
+                              final dt = DateTime.tryParse(reminderTimeStr);
+                              if (dt != null && dt.difference(DateTime.now()).isNegative) {
+                                isOverdue = true;
+                              }
+                            }
+                            
+                            return Padding(
+                              key: ValueKey('pad_${task['id']}'),
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: Dismissible(
+                                key: ValueKey('dismiss_${task['id']}'),
+                                direction: DismissDirection.endToStart,
+                                background: Container(
+                                  alignment: Alignment.centerRight,
+                                  padding: const EdgeInsets.symmetric(horizontal: 28.0),
+                                  decoration: BoxDecoration(color: AppTheme.success, borderRadius: BorderRadius.circular(16)),
+                                  child: const Icon(Icons.check_circle_outline, color: Colors.white, size: 32),
+                                ),
+                                onDismissed: (direction) => _completeTask(task),
+                                child: Card(
+                                  margin: EdgeInsets.zero,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16), 
+                                    side: BorderSide(
+                                      color: isOverdue ? AppTheme.deleteRed : Colors.grey.shade200,
+                                      width: isOverdue ? 1.5 : 1.0,
+                                    )
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(16.0),
+                                    child: Row(
+                                      children: [
+                                        CircleAvatar(
+                                          radius: 24,
+                                          backgroundColor: AppTheme.primaryLight,
+                                          child: Icon(isCall ? Icons.phone : Icons.chat, color: AppTheme.primary),
+                                        ),
+                                        const SizedBox(width: 16),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
+                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                children: [
+                                                  Expanded(child: Text(task['contact_name'] ?? 'Bilinmeyen', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.textPrimary), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                                                  Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                                    decoration: BoxDecoration(color: AppTheme.primaryLight, borderRadius: BorderRadius.circular(12)),
+                                                    child: Text(isCall ? 'Arama' : 'Mesaj', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.primary)),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(task['phone_number'] ?? '', style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13)),
+                                              const SizedBox(height: 6),
+                                              Row(
+                                                children: [
+                                                  const Icon(Icons.access_time, size: 14, color: AppTheme.textSecondary),
+                                                  const SizedBox(width: 4),
+                                                  Text(_getTimeLeft(task['reminder_time']), style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        ReorderableDragStartListener(
+                                          index: index,
+                                          child: const Icon(Icons.drag_handle, color: AppTheme.textSecondary),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+    );
+  }
+}
+
