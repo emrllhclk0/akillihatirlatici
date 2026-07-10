@@ -1,11 +1,11 @@
 # Akıllı Hatırlatıcı (Smart Reminder App)
 
-Flutter ile geliştirilmiş kişisel, şık ve kullanışlı bir hatırlatıcı uygulamasıdır. Günlük görevlerinizi, randevularınızı ve önemli anlarınızı unutmamak için kolayca notlar alabilir ve hatırlatıcılar kurabilirsiniz.
+Flutter ile geliştirilmiş kişisel, şık ve kullanışlı bir hatırlatıcı uygulamasıdır. Günlük görevlerinizi, randevularınızı ve önemli anlarınızı unutmamak için kolayca hatırlatıcılar kurabilirsiniz.
 
 ## 🚀 Özellikler
 
 - **Modern ve Şık Arayüz:** Kullanıcı dostu, akıcı ve göz yormayan tasarım.
-- **Hızlı Not Ekleme:** Hızlıca yeni görev ve hatırlatıcı ekleyebilme.
+- **Hızlı Not Ekleme:** Hızlıca hatırlatıcı ekleyebilme.
 - **Görev Yönetimi:** Tamamlanan görevleri işaretleme veya silme.
 - **Yerel Bildirimler (Local Notifications):** Planlanan zamanda uyarı alarak işlerinizi aksatmayın. (Geliştirme aşamasında/aktif)
 
@@ -38,9 +38,6 @@ Bu projeyi yerel ortamınızda çalıştırmak için aşağıdaki adımları izl
    flutter run
    ```
 
-## 📱 Ekran Görüntüleri
-
-*(Projenin ekran görüntülerini ilerleyen aşamalarda buraya ekleyebilirsin.)*
 
 ---
 
